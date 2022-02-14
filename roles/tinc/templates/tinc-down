@@ -1,0 +1,4 @@
+#!/bin/sh
+ip -6 route del {{ vpn_ip | regex_replace('::\d*', '::') }}/80 dev "$INTERFACE"
+ip -6 addr del {{ vpn_ip }}/128 dev "$INTERFACE"
+ip -6 link set "$INTERFACE" down

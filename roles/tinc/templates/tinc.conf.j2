@@ -1,0 +1,6 @@
+Name = {{ inventory_hostname }}
+{% for host in vars['play_hosts'] %}
+{% if hostvars[host].dns_name is defined and inventory_hostname != host %}
+ConnectTo = {{ host }}
+{% endif %}
+{% endfor %}

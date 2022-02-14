@@ -1,0 +1,101 @@
+---
+
+- name: install Tinc
+  package:
+    name: tinc
+    state: latest
+  notify:
+    - restart tinc
+
+- name: make network area.
+  file:
+    path: /etc/tinc/{{ netname }}/hosts/
+    state: directory
+
+- name: create main config
+  template:
+    src: templates/tinc.conf.j2
+    dest: /etc/tinc/{{ netname }}/tinc.conf
+
+- name: create tinc-up
+  template:
+    src: templates/tinc-up
+    dest: /etc/tinc/{{ netname }}/tinc-up
+    mode: 0755
+- name: create tinc-down
+  template:
+    src: templates/tinc-down
+    dest: /etc/tinc/{{ netname }}/tinc-down
+    mode: 0755
+
+- name: make tinc private key
+  command: tincd -n {{ netname }} -K 4096
+  args:
+    creates: /etc/tinc/{{ netname }}/rsa_key.priv
+  notify:
+    - restart tinc
+
+- name: fetch host public key
+  command: openssl rsa -in /etc/tinc/{{ netname }}/rsa_key.priv -RSAPublicKey_out -out /etc/tinc/{{ netname }}/rsa_key.pub
+  args:
+    creates: /etc/tinc/{{ netname }}/rsa_key.pub
+
+- name: fetch tinc hosts file after key creation
+  fetch:
+    src: /etc/tinc/{{ netname }}/rsa_key.pub
+    dest: fetched/rsa_{{ inventory_hostname }}.pub
+    flat: yes
+
+- name: create hosts file
+  template:
+    src: templates/host.j2
+    dest: /etc/tinc/{{ netname }}/hosts/{{ inventory_hostname }}
+    mode: 0644
+
+- name: fetch tinc hosts file after key creation
+  fetch:
+    src: /etc/tinc/{{ netname }}/hosts/{{ inventory_hostname }}
+    dest: fetched/{{ inventory_hostname }}
+    flat: yes
+
+- name: synchronize the list of Hosts
+  synchronize:
+    src: fetched/
+    dest: /etc/tinc/{{ netname }}/hosts/
+  notify:
+    - reload tinc
+
+# user is responsible for adding tinc service to master
+# this is to just make hosting on the vpn easy
+- name: enable firewall allowance for tinc port
+  ansible.posix.firewalld:
+    service: tinc
+    state: enabled
+    permanent: yes
+    immediate: yes
+
+- name: start tinc
+  service:
+    name: tinc@{{ netname }}
+    enabled: yes
+    state: started
+
+# user is responsible for adding tinc service to master
+# this is to just make hosting on the vpn easy
+- name: add interface to trusted network zone
+  ansible.posix.firewalld:
+    zone: trusted
+    interface: "{{ netname }}"
+    state: enabled
+    permanent: yes
+    immediate: yes
+
+
+- name: add nodes to /etc/hoss
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^[^\s]+\s+{{ item }}$'
+    line: "{{ hostvars[item].vpn_ip }} {{item}}"
+    state: present
+  when: hostvars[item].vpn_ip is defined
+  with_items: "{{ play_hosts }}"

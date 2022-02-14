@@ -1,0 +1,18 @@
+devices:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    netname: netname.here
+  hosts:
+    host1:
+      ansible_host: host1.example.com
+      ansible_ssh_port: 3311
+      vpn_ip: "fd60:1234:5678::"
+      dns_name: host1.example.com
+    host2:
+      ansible_connection: local
+      vpn_ip: "fd60:1234:5678::1"
+      dns_name: host2.example.com
+    my_laptop:
+      ansible_ssh_user: root
+      ansible_host: my-laptop.local
+      vpn_ip: "fd60:1234:5678::2"

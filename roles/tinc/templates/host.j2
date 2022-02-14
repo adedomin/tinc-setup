@@ -1,0 +1,12 @@
+{% if hostvars[inventory_hostname]['ansible_default_ipv6'] is defined %}
+Address = {{ hostvars[inventory_hostname]['ansible_default_ipv6']['address'] }}
+{% endif %}
+{% if hostvars[inventory_hostname]['ansible_default_ipv4'] is defined %}
+Address = {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
+{% endif %}
+{% if dns_name is defined %}
+Address = {{ dns_name }}
+{% endif %}
+Subnet = {{ vpn_ip }}
+
+{{ lookup('file', 'fetched/rsa_{}.pub'.format(inventory_hostname)) }}
