@@ -1,7 +1,4 @@
 ---
 - hosts: devices
-  vars:
-    netname: ghetty.space
-    master: dedominic_pw
   roles:
     - tinc
